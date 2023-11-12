@@ -8,7 +8,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialController extends Controller
 {
-    //Google Social Auth
+    //Google  Social  Auth
     public function googleDirect() {
         return Socialite::driver('google')->redirect();
     }

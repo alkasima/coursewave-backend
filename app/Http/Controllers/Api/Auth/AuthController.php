@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Auth\Events\Registered;
 
 class AuthController extends Controller
 {
@@ -17,7 +18,8 @@ class AuthController extends Controller
         try {
             
                 $validate = Validator::make($request->all(), [
-                    'name' => 'required',
+                    'first_name' => 'required',
+                    'last_name' => 'required',
                     'email' => 'required|email|unique:users,email',
                     'password' => 'required',
                 ]);
@@ -31,11 +33,15 @@ class AuthController extends Controller
                 }
 
                 $user = User::create([
-                    'name' => $request->name,
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
                     'email' => $request->email,
                     'password' => Hash::make($request->password)
                 ]);
 
+                //Send verification mail
+                event(new Registered($user));
+                
                 return response()->json([
                     'status' => true,
                     'message' => 'User created successfully',
@@ -76,11 +82,20 @@ class AuthController extends Controller
             }
 
             $user = User::where('email', $request->email)->first();
+           
+            if(!$user->hasVerifiedEmail()){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Email not verified',
+                ], 401);    
+            }else {
+            
             return response()->json([
                 'status' => true,
                 'message' => 'User logged in successfully',
                 'token' => $user->createToken("API TOKEN")->plainTextToken
             ], 200);
+        }
 
         } catch (\Throwable $th) {
             return response()->json([
